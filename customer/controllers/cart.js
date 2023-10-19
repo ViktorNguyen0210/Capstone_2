@@ -25,13 +25,21 @@ function getListProducts() {
     });
 }
 
-calcCartQuantity();
 getListProducts();
+calcCartQuantity();
 
 function renderUI(data) {
   var content = "";
-  if (crt.cart.length <= 0) {
-    return;
+  var divClear = "";
+  if (crt.cart.length == 0) {
+    getEle("single-product-area").innerHTML = `
+    <div class="text-center">
+      <h2>Cart is empty</h2>
+      <a href="../index.html" class="btn btn-primary">
+        Go back to Home
+      </a>
+    </div>
+    `;
   } else {
     content += crt.cart
       .map((item) => {
@@ -40,7 +48,7 @@ function renderUI(data) {
         return `
         <tr class="cart_item">
             <td class="product-remove">
-              <a title="Remove this item" class="remove" href="#"
+              <a title="Remove this item" class="remove" onclick="removeItem(${id})"
                 >×</a
               >
             </td>
@@ -61,7 +69,7 @@ function renderUI(data) {
             </td>
     
             <td class="product-price">
-              <span class="amount">£${search.price}</span>
+              <span class="amount">£ ${search.price}</span>
             </td>
     
             <td class="product-quantity">
@@ -92,14 +100,39 @@ function renderUI(data) {
             </td>
     
             <td class="product-subtotal">
-              <span class="amount">£${search.price}</span>
+              <span class="amount">${formatCurrency(
+                search.price * quantity,
+                "£ "
+              )}</span>
             </td>
         </tr>
         `;
       })
       .join("");
-    getEle("tbody").innerHTML = content;
+    divClear = `<tr>
+    <td colspan="6">
+       <input
+         value="CLEAR CART"
+         onclick="clearCart()"
+         class="mr-5 btn btn-danger"/>
+        <input
+         value="CHECK OUT"
+         onclick="checkOut()"
+         class="btn btn-success"/>
+     </td>
+    
+</tr>`;
+    getEle("tbody").innerHTML = content + divClear;
   }
+  calcTotalBill(data);
+}
+function formatCurrency(n, currency) {
+  return (
+    currency +
+    n.toFixed(2).replace(/./g, function (c, i, a) {
+      return i > 0 && c !== "." && (a.length - i) % 3 === 0 ? "," + c : c;
+    })
+  );
 }
 
 function handleMinus(id) {
@@ -122,8 +155,8 @@ function handlePlus(id) {
     search.quantity += 1;
   }
   updateQuantity(search.id);
-
   crt.cart = crt.cart.filter((item) => item.quantity !== 0);
+  getListProducts();
   localStorage.setItem("data", JSON.stringify(crt.cart));
 }
 
@@ -131,4 +164,42 @@ function updateQuantity(id) {
   let search = crt.cart.find((item) => item.id === id);
   getEle(id).value = search.quantity;
   calcCartQuantity();
+}
+
+function removeItem(id) {
+  crt.cart = crt.cart.filter((item) => item.id !== id);
+  getListProducts();
+  localStorage.setItem("data", JSON.stringify(crt.cart));
+  calcCartQuantity();
+}
+
+function calcTotalBill(data) {
+  if (crt.cart.length == 0) {
+    return;
+  } else {
+    let total = crt.cart
+      .map((item) => {
+        let { id, quantity } = item;
+        let search = data.find((x) => parseInt(x.id) === id) || [];
+        return quantity * search.price;
+      })
+      .reduce((x, y) => x + y, 0);
+    getEle("order-total-1").innerHTML = `${formatCurrency(total, "£ ")}`;
+    getEle("order-total-2").innerHTML = `${formatCurrency(total, "£ ")}`;
+    getEle("cart-totalPrice").innerHTML = `${formatCurrency(total, "£ ")}`;
+  }
+}
+function clearCart() {
+  crt.cart = [];
+  getListProducts();
+  localStorage.setItem("data", JSON.stringify(crt.cart)) || [];
+  calcCartQuantity();
+}
+
+function checkOut() {
+  crt.cart = [];
+  getListProducts();
+  localStorage.setItem("data", JSON.stringify(crt.cart)) || [];
+  calcCartQuantity();
+  alert("CHECK OUT SUCCESSFULLY");
 }
