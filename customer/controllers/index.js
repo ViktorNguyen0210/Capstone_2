@@ -42,6 +42,7 @@ function renderUI(data) {
     </div>
 
     `;
+    calcTotalBill(data);
   }
   document.querySelector("#product-carousel").innerHTML = content;
   $(".product-carousel").owlCarousel({
@@ -76,9 +77,31 @@ function handleAddToCart(id) {
 
 function calcCartQuantity() {
   var domQtyCart = getEle("product-count");
-  domQtyCart.innerHTML = crt.cart
+  var totalAmount = crt.cart
     .map((item) => item.quantity)
     .reduce((x, y) => x + y, 0);
+  domQtyCart.innerHTML = totalAmount;
+}
+function formatCurrency(n, currency) {
+  return (
+    currency +
+    n.toFixed(2).replace(/./g, function (c, i, a) {
+      return i > 0 && c !== "." && (a.length - i) % 3 === 0 ? "," + c : c;
+    })
+  );
+}
+function calcTotalBill(data) {
+  if (crt.cart.length == 0) {
+    return;
+  } else {
+    let total = crt.cart
+      .map((item) => {
+        let { id, quantity } = item;
+        let search = data.find((x) => parseInt(x.id) === id) || [];
+        return quantity * search.price;
+      })
+      .reduce((x, y) => x + y, 0);
+  }
 }
 
 calcCartQuantity();
